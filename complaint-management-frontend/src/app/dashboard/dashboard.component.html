@@ -1,0 +1,251 @@
+<div class="dashboard-container container mt-5">
+  <!-- Welcome Section -->
+  <div class="row">
+    <div class="col-12">
+      <h2>Welcome to the Dashboard</h2>
+      <p>Hello, {{ getUsername() }}!</p>
+      <!-- Debug Info -->
+      <div class="alert alert-info">
+        <strong>DEBUG:</strong> Role: "{{ role }}" | isAdmin: {{ isAdmin }} | isSupporter: {{ isSupporter }}
+        <br><strong>Role checks:</strong> 
+        SUPPORT_AGENT: {{ role === 'SUPPORT_AGENT' }} | 
+        SUPPORT AGENT: {{ role === 'SUPPORT AGENT' }} | 
+        Contains SUPPORT: {{ role.includes('SUPPORT') }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Bell - Top Right -->
+  <div class="notification-container">
+    <button (click)="toggleNotifications()" class="btn btn-info position-relative notification-bell">
+      <i class="fa fa-bell"></i>
+      <span *ngIf="unreadCount > 0" class="badge badge-danger notification-badge">
+        {{ unreadCount }}
+      </span>
+    </button>
+    
+    <!-- Notification Panel -->
+    <div *ngIf="showNotifications" class="notification-panel">
+      <div class="notification-header">
+        <h6>Notifications</h6>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Notifications</span>
+          <div>
+            <button *ngIf="isAdmin || isSupporter" (click)="showCreateNotification = !showCreateNotification" class="btn btn-sm btn-primary me-2">
+              + Create
+            </button>
+            <button (click)="closeNotifications()" class="btn btn-sm btn-outline-secondary">×</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="notification-body" *ngIf="!isAdmin && !isSupporter">
+        <div *ngFor="let notification of notifications" class="notification-item" [class.unread]="!notification.isRead">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+              <div *ngIf="notification.title" class="notification-title">{{ notification.title }}</div>
+              <div class="notification-message">{{ notification.body || notification.message }}</div>
+              <small class="notification-time text-muted">
+                {{ notification.createdAt | date:'MMM d, h:mm a' }}
+                <span *ngIf="notification.senderName" class="ms-2">
+                  • From: <strong>{{ notification.senderName }}</strong>
+                </span>
+              </small>
+            </div>
+            <div class="notification-actions">
+              <span *ngIf="notification.isRead === true" class="text-success" style="font-size: 16px;" title="Read">
+                <i class="fa fa-check-circle"></i>
+              </span>
+              <span *ngIf="notification.isRead !== true" class="text-muted" style="font-size: 16px;" title="Unread">
+                <i class="fa fa-circle"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div *ngIf="!notifications || notifications.length === 0" class="text-center py-3">
+          <p class="text-muted">No notifications available</p>
+        </div>
+      </div>
+      
+      <!-- Admin/Support Agent Message -->
+      <div *ngIf="isAdmin || isSupporter" class="text-center py-3">
+        <p class="text-muted">Click "+ Create" to send notifications to customers</p>
+      </div>
+      
+      <!-- Send Notification Section -->
+      <div *ngIf="(isAdmin || isSupporter) && showCreateNotification" class="notification-send">
+        <hr class="my-2">
+        <h6 class="mb-2"><i class="fa fa-paper-plane me-1"></i>Send Notification</h6>
+        
+        <div class="mb-2 position-relative">
+          <input 
+            type="text" 
+            [(ngModel)]="customerSearchQuery"
+            (input)="searchCustomers()"
+            class="form-control form-control-sm"
+            placeholder="Search customer by name, username, or ID..."
+            autocomplete="off">
+          
+          <div *ngIf="showUserDropdown" class="search-dropdown">
+            <div *ngFor="let user of filteredUsers" (click)="selectUser(user)" class="search-item">
+              <div><strong>{{ user.fullName }}</strong> <small class="text-muted">({{ user.role }})</small></div>
+              <small class="text-muted">ID: {{ user.id }} | {{ '@' + user.username }}</small>
+            </div>
+          </div>
+          
+          <div *ngIf="selectedUserId && !showUserDropdown" class="selected-user mt-1">
+            <small class="text-success">
+              <i class="fa fa-check-circle me-1"></i>{{ getSelectedUserName() }}
+            </small>
+          </div>
+        </div>
+        
+        <div class="mb-2">
+          <textarea 
+            [(ngModel)]="newNotificationMessage" 
+            class="form-control form-control-sm" 
+            placeholder="Enter your message..." 
+            rows="2"
+            maxlength="200">
+          </textarea>
+          <small class="text-muted">{{ newNotificationMessage.length || 0 }}/200</small>
+        </div>
+        
+        <div class="d-flex gap-2">
+          <button 
+            (click)="sendNotification()" 
+            class="btn btn-sm btn-primary flex-grow-1" 
+            [disabled]="!selectedUserId || !newNotificationMessage.trim()">
+            <i class="fa fa-send me-1"></i>Send
+          </button>
+          <button (click)="clearNotificationForm()" class="btn btn-sm btn-outline-secondary">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <!-- Ticket Filters and Sorting -->
+  <div class="row">
+    <div class="col-md-6">
+      <input [(ngModel)]="searchQuery" class="form-control" placeholder="Search tickets..." />
+    </div>
+    <div class="col-md-6 text-right">
+      <select class="form-control" [(ngModel)]="sortOption" (change)="sortTickets()">
+        <option value="priority">Sort by Priority</option>
+        <option value="status">Sort by Status</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Ticket List -->
+  <div *ngIf="tickets.length > 0; else noTickets">
+    <div class="row mt-3">
+      <div *ngFor="let ticket of tickets" class="col-md-4 mb-3">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">{{ ticket.title }}</h5>
+            <p class="card-text"><strong>Status:</strong> {{ ticket.status }}</p>
+            <p class="card-text"><strong>Priority:</strong> {{ ticket.priority }}</p>
+            <p class="card-text"><strong>Customer:</strong> {{ getCustomerName(ticket) }}</p>
+            <p class="card-text"><strong>Assigned to:</strong> {{ getAssignedAgentName(ticket) }}</p>
+            <!-- Display Description -->
+            <p class="card-text"><strong>Description:</strong> {{ ticket.description || 'No description available.' }}</p>
+            
+            <!-- Admin buttons: Change Status + Assign -->
+            <div *ngIf="isAdmin" class="action-buttons mb-2">
+              <button (click)="openStatusDialog(ticket.id)" class="btn btn-warning btn-sm me-2">
+                <i class="fa fa-edit"></i> Change Status
+              </button>
+              <button (click)="openAssignDialog(ticket.id)" class="btn btn-primary btn-sm">
+                <i class="fa fa-user-plus"></i> Assign Agent
+              </button>
+            </div>
+            
+            <!-- Support Agent button: Change Status only -->
+            <div *ngIf="isSupporter" class="action-buttons mb-2">
+              <button (click)="openStatusDialog(ticket.id)" class="btn btn-warning btn-sm">
+                <i class="fa fa-edit"></i> Change Status
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Tickets Available -->
+  <ng-template #noTickets>
+    <p>No tickets found for this role.</p>
+  </ng-template>
+
+
+
+  <!-- Create Ticket Button (for Customers) -->
+  <div *ngIf="role === 'CUSTOMER'" class="text-center mt-4">
+    <button (click)="createTicket()" class="btn btn-primary">Create a New Ticket</button>
+  </div>
+
+  <!-- Status Change Dialog -->
+  <div *ngIf="showStatusDialog" class="modal d-block" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Change Ticket Status</h5>
+          <button type="button" class="btn-close" (click)="closeStatusDialog()"></button>
+        </div>
+        <div class="modal-body">
+          <select [(ngModel)]="newStatus" class="form-control">
+            <option value="">Select Status</option>
+            <option value="OPEN">Open</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="RESOLVED">Resolved</option>
+            <option value="CLOSED">Closed</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeStatusDialog()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="changeStatus()">Update Status</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Agent Dialog -->
+  <div *ngIf="showAssignDialog" class="modal d-block" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Assign Support Agent</h5>
+          <button type="button" class="btn-close" (click)="closeAssignDialog()"></button>
+        </div>
+        <div class="modal-body">
+          <div *ngFor="let agent of supportAgents" class="mb-2">
+            <button (click)="assignTicket(agent.id)" class="btn btn-outline-primary w-100">
+              {{ agent.fullName }} ({{ agent.username }})
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeAssignDialog()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button (click)="onLogout()" class="btn btn-danger mt-3">Logout</button>
+</div>

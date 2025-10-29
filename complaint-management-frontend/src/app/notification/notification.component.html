@@ -1,0 +1,19 @@
+<div class="container">
+  <h3>Notifications</h3>
+
+  <!-- Display Notifications -->
+  <div *ngIf="notifications.length > 0">
+    <div class="list-group mt-3">
+      <div *ngFor="let notification of notifications" class="list-group-item">
+        <p>{{ notification.message }}</p>
+        <button *ngIf="!notification.isRead" (click)="markAsRead(notification.id)" class="btn btn-link">
+          Mark as read
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="notifications.length === 0">
+    <p>No notifications available.</p>
+  </div>
+</div>

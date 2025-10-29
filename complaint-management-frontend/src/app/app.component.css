@@ -1,0 +1,26 @@
+.app-container {
+  min-height: 100vh;
+}
+
+.header {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-weight: 600;
+  font-size: 1.3rem;
+}
+
+.nav-link {
+  color: rgba(255, 255, 255, 0.8) !important;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: white !important;
+}
+
+/* Ensure main content has proper spacing */
+router-outlet + * {
+  padding-top: 20px;
+}

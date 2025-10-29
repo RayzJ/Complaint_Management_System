@@ -1,0 +1,28 @@
+.notification-btn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 9999;
+}
+
+.notification {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background-color: #f8f9fa;
+  border: 1px solid #ccc;
+  padding: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.list-group-item {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border: 1px solid #ddd;
+  margin-bottom: 5px;
+}
+
+.btn-link {
+  text-decoration: none;
+  color: #007bff;
+}
