@@ -8,9 +8,11 @@
       <div class="alert alert-info">
         <strong>DEBUG:</strong> Role: "{{ role }}" | isAdmin: {{ isAdmin }} | isSupporter: {{ isSupporter }}
         <br><strong>Role checks:</strong> 
+        CUSTOMER: {{ role === 'CUSTOMER' }} | 
         SUPPORT_AGENT: {{ role === 'SUPPORT_AGENT' }} | 
         SUPPORT AGENT: {{ role === 'SUPPORT AGENT' }} | 
         Contains SUPPORT: {{ role.includes('SUPPORT') }}
+        <br><strong>Show Create Button:</strong> {{ !isAdmin && !isSupporter }}
       </div>
     </div>
   </div>
@@ -196,8 +198,11 @@
 
 
   <!-- Create Ticket Button (for Customers) -->
-  <div *ngIf="role === 'CUSTOMER'" class="text-center mt-4">
-    <button (click)="createTicket()" class="btn btn-primary">Create a New Ticket</button>
+  <div *ngIf="!isAdmin && !isSupporter" class="text-center mt-4">
+    <button (click)="createTicket()" class="btn btn-primary btn-lg">
+      <i class="fa fa-plus"></i> Create a New Ticket
+    </button>
+    <p class="text-muted mt-2">Submit your complaint or request for assistance</p>
   </div>
 
   <!-- Status Change Dialog -->
