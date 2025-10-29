@@ -102,19 +102,33 @@ public class TicketService {
     }
 
     public TicketDTO create(TicketDTO dto) {
-        logger.info("Creating ticket {}", dto.getTitle());
-        if (dto.getTitle() == null || dto.getTitle().isBlank())
-            throw new BadRequestException("Title is required");
-        Ticket t = TicketMapper.toEntity(dto);
-        if (dto.getCustomerId() != null) {
-            User c = userRepository.findById(dto.getCustomerId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + dto.getCustomerId()));
-            t.setCustomer(c);
-        }
-        t.setReference("TCK-" + System.currentTimeMillis());
-        t = ticketRepository.save(t);
-        return TicketMapper.toDto(t);
+    logger.info("Creating ticket {}", dto.getTitle());
+
+    // Validate title
+    if (dto.getTitle() == null || dto.getTitle().isBlank()) {
+        throw new BadRequestException("Title is required");
     }
+
+    // Create ticket entity from DTO
+    Ticket t = TicketMapper.toEntity(dto);
+
+    // Ensure customer_id is provided and assign the customer to the ticket
+    if (dto.getCustomerId() == null) {
+        throw new BadRequestException("Customer ID is required");
+    }
+    
+    User c = userRepository.findById(dto.getCustomerId())
+            .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + dto.getCustomerId()));
+    t.setCustomer(c);
+
+    // Set other properties
+    t.setReference("TCK-" + System.currentTimeMillis());
+    t.setCreatedAt(LocalDateTime.now());  // Set the current timestamp for created_at
+    t = ticketRepository.save(t);
+
+    return TicketMapper.toDto(t);
+}
+
 
     public TicketDTO update(Integer id, TicketDTO dto) {
         logger.info("Updating ticket id={}", id);
@@ -231,5 +245,10 @@ public class TicketService {
 
         return TicketMapper.toDto(t);
     }
+
+    public List<User> getSupportAgents() {
+    return userRepository.findByRole("SUPPORT AGENT"); // Assuming the role of 'SUPPORT AGENT' is stored in the role field
+}
+
 
 }

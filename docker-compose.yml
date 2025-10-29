@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./demo
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - complaint-network
+
+  frontend:
+    build: ./complaint-management-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - complaint-network
+
+networks:
+  complaint-network:
+    driver: bridge

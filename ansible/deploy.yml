@@ -1,0 +1,61 @@
+---
+- name: Deploy Complaint Management System
+  hosts: ec2_instances
+  become: yes
+  vars:
+    app_name: complaint-management
+    build_number: "{{ build_number | default('latest') }}"
+    
+  tasks:
+    - name: Update system packages
+      apt:
+        update_cache: yes
+        upgrade: yes
+        
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        
+    - name: Install Docker Compose
+      pip:
+        name: docker-compose
+        state: present
+        
+    - name: Start Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+        
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+        
+    - name: Create application directory
+      file:
+        path: /opt/{{ app_name }}
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        
+    - name: Copy docker-compose file
+      copy:
+        src: ../docker-compose.yml
+        dest: /opt/{{ app_name }}/docker-compose.yml
+        owner: ubuntu
+        group: ubuntu
+        
+    - name: Stop existing containers
+      docker_compose:
+        project_src: /opt/{{ app_name }}
+        state: absent
+      ignore_errors: yes
+      
+    - name: Pull and start new containers
+      docker_compose:
+        project_src: /opt/{{ app_name }}
+        state: present
+        pull: yes
