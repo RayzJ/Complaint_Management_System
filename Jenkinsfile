@@ -22,6 +22,8 @@ pipeline {
                 echo "⚙️ Building Backend Docker Image (Tag: ${IMAGE_TAG})..."
                 dir('demo') {
                     sh """
+                    ansible --version
+                    docker --version
                     docker build -t ${DOCKERHUB_USER}/CMS:${BACKEND_IMAGE}-${IMAGE_TAG} .
                     """
                 }
