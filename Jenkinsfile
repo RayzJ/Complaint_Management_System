@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USER = 'riyaz0504'   // 🔹 change this
+        DOCKERHUB_USER = 'riyaz04052003'   // 🔹 correct Docker Hub username
         BACKEND_IMAGE = 'complaint-backend'
         FRONTEND_IMAGE = 'complaint-frontend'
         IMAGE_TAG = "v${BUILD_NUMBER}"               // 🔹 auto-tag from Jenkins build number
@@ -46,8 +46,8 @@ pipeline {
                 echo "🔐 Logging into Docker Hub..."
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-credentials',  // Jenkins credentials ID
-                    usernameVariable: 'riyaz0504',
-                    passwordVariable: 'jhfr@05042004'
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 }
