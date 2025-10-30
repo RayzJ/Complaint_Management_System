@@ -1,104 +1,76 @@
 pipeline {
     agent any
-    
+
     environment {
-        DOCKER_REGISTRY = 'your-docker-registry'
-        APP_NAME = 'complaint-management-system'
-        BUILD_NUMBER = "${env.BUILD_NUMBER}"
+        DOCKERHUB_USER = 'yuva19102003'   // 🔹 change this
+        BACKEND_IMAGE = 'complaint-backend'
+        FRONTEND_IMAGE = 'complaint-frontend'
+        IMAGE_TAG = "v${BUILD_NUMBER}"               // 🔹 auto-tag from Jenkins build number
     }
-    
+
     stages {
-        stage('Checkout') {
+
+        stage('Checkout Code') {
             steps {
-                echo 'Checking out source code...'
-                checkout scm
+                echo "📦 Cloning repository (master branch)..."
+                git branch: 'master', url: 'https://github.com/RayzJ/Complaint_Management_System.git'
             }
         }
-        
-        stage('Build Backend') {
+
+        stage('Build Backend Image') {
             steps {
-                echo 'Building Spring Boot backend...'
-                script {
-                    dir('demo') {
-                        sh 'docker build -t complaint-backend:${BUILD_NUMBER} .'
-                        sh 'docker tag complaint-backend:${BUILD_NUMBER} complaint-backend:latest'
-                    }
+                echo "⚙️ Building Backend Docker Image (Tag: ${IMAGE_TAG})..."
+                dir('demo') {
+                    sh """
+                    docker build -t ${DOCKERHUB_USER}/CMS:${BACKEND_IMAGE}-${IMAGE_TAG} .
+                    """
                 }
             }
         }
-        
-        stage('Build Frontend') {
+
+        stage('Build Frontend Image') {
             steps {
-                echo 'Building Angular frontend...'
-                script {
-                    dir('complaint-management-frontend') {
-                        sh 'docker build -t complaint-frontend:${BUILD_NUMBER} .'
-                        sh 'docker tag complaint-frontend:${BUILD_NUMBER} complaint-frontend:latest'
-                    }
+                echo "⚙️ Building Frontend Docker Image (Tag: ${IMAGE_TAG})..."
+                dir('complaint_system_frontend') {
+                    sh """
+                    docker build -t ${DOCKERHUB_USER}/CMS:${FRONTEND_IMAGE}-${IMAGE_TAG} .
+                    """
                 }
             }
         }
-        
-        stage('Test') {
-            parallel {
-                stage('Backend Tests') {
-                    steps {
-                        echo 'Running backend tests...'
-                        script {
-                            dir('demo') {
-                                sh 'mvn test'
-                            }
-                        }
-                    }
-                }
-                stage('Frontend Tests') {
-                    steps {
-                        echo 'Running frontend tests...'
-                        script {
-                            dir('complaint-management-frontend') {
-                                sh 'npm test -- --watch=false --browsers=ChromeHeadless'
-                            }
-                        }
-                    }
+
+        stage('Login to Docker Hub') {
+            steps {
+                echo "🔐 Logging into Docker Hub..."
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',  // Jenkins credentials ID
+                    usernameVariable: 'yuva19102003',
+                    passwordVariable: 'yr19102003'
+                )]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 }
             }
         }
-        
-        stage('Deploy to Staging') {
+
+        stage('Push Images to Docker Hub') {
             steps {
-                echo 'Deploying to staging environment...'
-                sh 'docker-compose -f docker-compose.staging.yml up -d'
-            }
-        }
-        
-        stage('Deploy to Production') {
-            when {
-                branch 'master'
-            }
-            steps {
-                echo 'Deploying to production environment...'
-                sh 'docker-compose up -d'
-                
-                // Health check
-                script {
-                    sleep(30)
-                    sh 'curl -f http://localhost:80 || exit 1'
-                    sh 'curl -f http://localhost:8080/actuator/health || exit 1'
-                }
+                echo "📤 Pushing Docker Images with tag ${IMAGE_TAG}..."
+                sh """
+                docker push ${DOCKERHUB_USER}/CMS:${BACKEND_IMAGE}-${IMAGE_TAG}
+                docker push ${DOCKERHUB_USER}/CMS:${FRONTEND_IMAGE}-${IMAGE_TAG}
+                """
             }
         }
     }
-    
+
     post {
-        always {
-            echo 'Cleaning up...'
-            sh 'docker system prune -f'
-        }
         success {
-            echo 'Pipeline completed successfully!'
+            echo "✅ Build ${BUILD_NUMBER} complete — Images pushed:"
+            echo "   ${DOCKERHUB_USER}/CMS:${BACKEND_IMAGE}-${IMAGE_TAG}"
+            echo "   ${DOCKERHUB_USER}/CMS:${FRONTEND_IMAGE}-${IMAGE_TAG}"
         }
         failure {
-            echo 'Pipeline failed!'
+            echo "❌ Pipeline failed during build ${BUILD_NUMBER}."
         }
     }
 }
