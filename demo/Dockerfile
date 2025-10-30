@@ -1,28 +1,24 @@
-# ----------- Stage 1: Build the application -----------
-FROM maven:3.9.9-amazoncorretto-21 AS build
+# Multi-stage build for Spring Boot
+FROM maven:3.9.4-openjdk-17 AS build
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy pom.xml and download dependencies first (for better caching)
+# Copy pom.xml and download dependencies
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-# Copy source code and build the app
+# Copy source code and build
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# ----------- Stage 2: Run the application -----------
-FROM amazoncorretto:21-alpine
+# Runtime stage
+FROM openjdk:17-jdk-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy the built jar file from the build stage
+# Copy JAR from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose application port (change if needed)
 EXPOSE 8080
 
-# Run the Spring Boot app
 ENTRYPOINT ["java", "-jar", "app.jar"]
