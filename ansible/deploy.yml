@@ -1,61 +1,74 @@
 ---
 - name: Deploy Complaint Management System
-  hosts: ec2_instances
+  hosts: production
   become: yes
   vars:
-    app_name: complaint-management
-    build_number: "{{ build_number | default('latest') }}"
+    app_name: complaint-management-system
+    app_user: ec2-user
+    app_dir: /home/ec2-user/Complaint_Management_System
     
   tasks:
     - name: Update system packages
-      apt:
-        update_cache: yes
-        upgrade: yes
+      yum:
+        name: "*"
+        state: latest
         
-    - name: Install Docker
-      apt:
-        name: docker.io
+    - name: Install required packages
+      yum:
+        name:
+          - git
+          - docker
         state: present
         
-    - name: Install Docker Compose
-      pip:
-        name: docker-compose
-        state: present
-        
-    - name: Start Docker service
+    - name: Start and enable Docker
       systemd:
         name: docker
         state: started
         enabled: yes
         
-    - name: Add ubuntu user to docker group
+    - name: Add user to docker group
       user:
-        name: ubuntu
+        name: "{{ app_user }}"
         groups: docker
         append: yes
         
-    - name: Create application directory
-      file:
-        path: /opt/{{ app_name }}
-        state: directory
-        owner: ubuntu
-        group: ubuntu
+    - name: Install Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-Linux-x86_64"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
         
-    - name: Copy docker-compose file
-      copy:
-        src: ../docker-compose.yml
-        dest: /opt/{{ app_name }}/docker-compose.yml
-        owner: ubuntu
-        group: ubuntu
-        
-    - name: Stop existing containers
-      docker_compose:
-        project_src: /opt/{{ app_name }}
-        state: absent
-      ignore_errors: yes
+    - name: Clone or update application repository
+      git:
+        repo: https://github.com/RayzJ/Complaint_Management_System.git
+        dest: "{{ app_dir }}"
+        force: yes
+      become_user: "{{ app_user }}"
       
-    - name: Pull and start new containers
-      docker_compose:
-        project_src: /opt/{{ app_name }}
-        state: present
-        pull: yes
+    - name: Stop existing containers
+      shell: docker-compose down
+      args:
+        chdir: "{{ app_dir }}"
+      ignore_errors: yes
+      become_user: "{{ app_user }}"
+      
+    - name: Build and start application
+      shell: docker-compose up -d --build
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+      
+    - name: Wait for application to start
+      wait_for:
+        port: 80
+        host: localhost
+        delay: 30
+        timeout: 300
+        
+    - name: Verify application health
+      uri:
+        url: http://localhost:80
+        method: GET
+        status_code: 200
+      retries: 5
+      delay: 10

@@ -1,51 +1,89 @@
 pipeline {
     agent any
     
-    tools {
-        maven 'Maven-3.9'
-        nodejs 'NodeJS-18'
+    environment {
+        DOCKER_REGISTRY = 'your-docker-registry'
+        APP_NAME = 'complaint-management-system'
+        BUILD_NUMBER = "${env.BUILD_NUMBER}"
     }
     
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-username/complaint-management-system.git'
+                echo 'Checking out source code...'
+                checkout scm
             }
         }
         
         stage('Build Backend') {
             steps {
-                dir('demo') {
-                    sh 'mvn clean package -DskipTests'
+                echo 'Building Spring Boot backend...'
+                script {
+                    dir('demo') {
+                        sh 'docker build -t complaint-backend:${BUILD_NUMBER} .'
+                        sh 'docker tag complaint-backend:${BUILD_NUMBER} complaint-backend:latest'
+                    }
                 }
             }
         }
         
         stage('Build Frontend') {
             steps {
-                dir('complaint-management-frontend') {
-                    sh 'npm install'
-                    sh 'npm run build'
+                echo 'Building Angular frontend...'
+                script {
+                    dir('complaint-management-frontend') {
+                        sh 'docker build -t complaint-frontend:${BUILD_NUMBER} .'
+                        sh 'docker tag complaint-frontend:${BUILD_NUMBER} complaint-frontend:latest'
+                    }
                 }
             }
         }
         
-        stage('Build Docker Images') {
-            steps {
-                script {
-                    sh 'docker build -t complaint-backend:${BUILD_NUMBER} ./demo'
-                    sh 'docker build -t complaint-frontend:${BUILD_NUMBER} ./complaint-management-frontend'
+        stage('Test') {
+            parallel {
+                stage('Backend Tests') {
+                    steps {
+                        echo 'Running backend tests...'
+                        script {
+                            dir('demo') {
+                                sh 'mvn test'
+                            }
+                        }
+                    }
+                }
+                stage('Frontend Tests') {
+                    steps {
+                        echo 'Running frontend tests...'
+                        script {
+                            dir('complaint-management-frontend') {
+                                sh 'npm test -- --watch=false --browsers=ChromeHeadless'
+                            }
+                        }
+                    }
                 }
             }
         }
         
-        stage('Deploy to EC2') {
+        stage('Deploy to Staging') {
             steps {
+                echo 'Deploying to staging environment...'
+                sh 'docker-compose -f docker-compose.staging.yml up -d'
+            }
+        }
+        
+        stage('Deploy to Production') {
+            when {
+                branch 'master'
+            }
+            steps {
+                echo 'Deploying to production environment...'
+                sh 'docker-compose up -d'
+                
+                // Health check
                 script {
-                    sh '''
-                        ansible-playbook -i inventory/hosts deploy.yml \
-                        --extra-vars "build_number=${BUILD_NUMBER}"
-                    '''
+                    sleep(30)
+                    sh 'curl -f http://localhost:80 || exit 1'
+                    sh 'curl -f http://localhost:8080/actuator/health || exit 1'
                 }
             }
         }
@@ -53,7 +91,14 @@ pipeline {
     
     post {
         always {
-            cleanWs()
+            echo 'Cleaning up...'
+            sh 'docker system prune -f'
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }

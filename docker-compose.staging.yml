@@ -1,0 +1,51 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: complaint-mysql-staging
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: complaint_db_staging
+      MYSQL_USER: complaint_user
+      MYSQL_PASSWORD: complaint_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_staging_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - complaint-staging-network
+    restart: unless-stopped
+
+  backend:
+    build: ./demo
+    container_name: complaint-backend-staging
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=staging
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/complaint_db_staging
+      - SPRING_DATASOURCE_USERNAME=complaint_user
+      - SPRING_DATASOURCE_PASSWORD=complaint_pass
+    depends_on:
+      - mysql
+    networks:
+      - complaint-staging-network
+    restart: unless-stopped
+
+  frontend:
+    build: ./complaint-management-frontend
+    container_name: complaint-frontend-staging
+    ports:
+      - "81:80"
+    depends_on:
+      - backend
+    networks:
+      - complaint-staging-network
+    restart: unless-stopped
+
+volumes:
+  mysql_staging_data:
+
+networks:
+  complaint-staging-network:
+    driver: bridge
