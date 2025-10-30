@@ -1,5 +1,0 @@
-[ec2_instances]
-complaint-server ansible_host=YOUR_EC2_PUBLIC_IP ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/your-key.pem
-
-[ec2_instances:vars]
-ansible_python_interpreter=/usr/bin/python3
