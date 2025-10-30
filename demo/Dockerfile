@@ -1,17 +1,28 @@
-FROM openjdk:17-jdk-slim
+# ----------- Stage 1: Build the application -----------
+FROM maven:3.9.9-amazoncorretto-21 AS build
 
+# Set the working directory inside the container
 WORKDIR /app
 
-# Install Maven
-RUN apt-get update && apt-get install -y maven wget && rm -rf /var/lib/apt/lists/*
+# Copy pom.xml and download dependencies first (for better caching)
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Copy source and build
-COPY . .
-RUN mvn clean package -DskipTests && mv target/*.jar app.jar
+# Copy source code and build the app
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Install wait-for-it
-RUN wget -O wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh && chmod +x wait-for-it.sh
+# ----------- Stage 2: Run the application -----------
+FROM amazoncorretto:21-alpine
 
+# Set working directory
+WORKDIR /app
+
+# Copy the built jar file from the build stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose application port (change if needed)
 EXPOSE 8080
 
-CMD ["./wait-for-it.sh", "mysql:3306", "--timeout=60", "--", "java", "-jar", "app.jar"]
+# Run the Spring Boot app
+ENTRYPOINT ["java", "-jar", "app.jar"]
