@@ -22,7 +22,7 @@ pipeline {
             steps {
                 echo "⚙️ Building Backend Docker Image (Tag: ${IMAGE_TAG})..."
                 dir('demo') {
-                    bat "docker build -t ${DOCKERHUB_USER}/cms:${BACKEND_IMAGE}-${IMAGE_TAG} ."
+                    sh "docker build -t ${DOCKERHUB_USER}/cms:${BACKEND_IMAGE}-${IMAGE_TAG} ."
                 }
             }
         }
@@ -31,7 +31,7 @@ pipeline {
             steps {
                 echo "⚙️ Building database Docker Image (Tag: ${IMAGE_TAG})..."
                 dir('database') {
-                    bat "docker build -t ${DOCKERHUB_USER}/cms:${DB_IMAGE}-${IMAGE_TAG} ."
+                    sh "docker build -t ${DOCKERHUB_USER}/cms:${DB_IMAGE}-${IMAGE_TAG} ."
                 }
             }
         }
@@ -40,7 +40,7 @@ pipeline {
             steps {
                 echo "⚙️ Building Frontend Docker Image (Tag: ${IMAGE_TAG})..."
                 dir('complaint-management-frontend') {
-                    bat "docker build -t ${DOCKERHUB_USER}/cms:${FRONTEND_IMAGE}-${IMAGE_TAG} ."
+                    sh "docker build -t ${DOCKERHUB_USER}/cms:${FRONTEND_IMAGE}-${IMAGE_TAG} ."
                 }
             }
         }
@@ -53,9 +53,9 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    bat '''
-                        echo Logging in as: %DOCKER_USER%
-                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                    sh '''
+                        echo "Logging in as: $DOCKER_USER"
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     '''
                 }
             }
@@ -64,7 +64,7 @@ pipeline {
         stage('Push Images to Docker Hub') {
             steps {
                 echo "📤 Pushing Docker Images with tag ${IMAGE_TAG}..."
-                bat """
+                sh """
                 docker push ${DOCKERHUB_USER}/cms:${BACKEND_IMAGE}-${IMAGE_TAG}
                 docker push ${DOCKERHUB_USER}/cms:${DB_IMAGE}-${IMAGE_TAG}
                 docker push ${DOCKERHUB_USER}/cms:${FRONTEND_IMAGE}-${IMAGE_TAG}
