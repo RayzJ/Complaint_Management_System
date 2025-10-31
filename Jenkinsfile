@@ -83,8 +83,8 @@ pipeline {
                     # Update image tag in Ansible variables
                     sed -i 's/image_tag: .*/image_tag: "${IMAGE_TAG}"/' group_vars/all.yml
                     
-                    # Run Ansible deployment
-                    ansible-playbook -i inventory/hosts.yml playbooks/deploy.yml -v
+                    # Run Ansible deployment with explicit variables
+                    ansible-playbook -i inventory/hosts.yml playbooks/deploy.yml -e @group_vars/all.yml -v
                     """
                 }
             }
