@@ -6,6 +6,7 @@ import { NotificationService } from '../notification.service';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../auth.service';  // Make sure AuthService is available
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-dashboard',
@@ -101,7 +102,7 @@ export class DashboardComponent {
     });
 
     // Make the GET request to fetch tickets for the current user and role
-    this.http.get<any[]>(`http://localhost:8080/api/tickets?role=${role}&userId=${userId}`, { headers })
+    this.http.get<any[]>(`${environment.apiUrl}/tickets?role=${role}&userId=${userId}`, { headers })
       .subscribe(
         (data: any) => {
           this.tickets = data;
@@ -221,7 +222,7 @@ export class DashboardComponent {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
     
-    this.http.get<any[]>('http://localhost:8080/api/users', { headers })
+    this.http.get<any[]>(environment.apiUrl + '/users', { headers })
       .subscribe(
         (users) => {
           this.allUsers = users || [];
@@ -247,7 +248,7 @@ export class DashboardComponent {
       senderId: Number(this.userId)
     };
     
-    this.http.post('http://localhost:8080/api/notifications/send', notificationData, { headers })
+    this.http.post(environment.apiUrl + '/notifications/send', notificationData, { headers })
       .subscribe(
         (response) => {
           console.log('Notification sent successfully:', response);
@@ -290,7 +291,7 @@ export class DashboardComponent {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
     
-    this.http.get<any[]>('http://localhost:8080/api/notifications/users/support-agents', { headers })
+    this.http.get<any[]>(environment.apiUrl + '/notifications/users/support-agents', { headers })
       .subscribe(
         (agents) => {
           this.supportAgents = agents || [];
@@ -313,7 +314,7 @@ export class DashboardComponent {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' });
     
-    this.http.put(`http://localhost:8080/api/tickets/${this.selectedTicketId}/status`, 
+    this.http.put(`${environment.apiUrl}/tickets/${this.selectedTicketId}/status`, 
       { status: this.newStatus }, { headers })
       .subscribe(
         (response) => {
@@ -337,7 +338,7 @@ export class DashboardComponent {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' });
     
-    this.http.post(`http://localhost:8080/api/tickets/assign/${this.selectedTicketId}`, 
+    this.http.post(`${environment.apiUrl}/tickets/assign/${this.selectedTicketId}`, 
       { agentId }, { headers })
       .subscribe(
         (response) => {

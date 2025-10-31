@@ -4,6 +4,7 @@ import { AuthService } from '../auth.service';  // Import AuthService
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-create-ticket',
@@ -62,7 +63,7 @@ export class CreateTicketComponent {
 
     // Send POST request to create ticket
     this.loading = true;
-    this.http.post('http://localhost:8080/api/tickets', this.ticket, { headers })
+    this.http.post(environment.apiUrl + '/tickets', this.ticket, { headers })
       .subscribe(
         (response: any) => {
           // Assign the id of the created ticket from the response
@@ -88,7 +89,7 @@ export class CreateTicketComponent {
     }
 
     this.isAssigning = true;  // Show the assignment dialog
-    this.http.get<any[]>(`http://localhost:8080/api/tickets/${ticketId}/assign-agents`).subscribe(
+    this.http.get<any[]>(`${environment.apiUrl}/tickets/${ticketId}/assign-agents`).subscribe(
       (agents) => {
         this.supportAgents = agents;  // Store the list of agents
       },
@@ -115,7 +116,7 @@ export class CreateTicketComponent {
     });
 
     // Send POST request to assign the agent to the ticket
-    this.http.post(`http://localhost:8080/api/tickets/assign/${this.ticket.id}`, { agentId }, { headers })
+    this.http.post(`${environment.apiUrl}/tickets/assign/${this.ticket.id}`, { agentId }, { headers })
       .subscribe(
         (response) => {
           console.log('Ticket assigned successfully', response);
