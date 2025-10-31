@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: riyaz04052003/cms:complaint-database-v3
+    image: mysql:8.0
     container_name: complaint-mysql
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: riyaz04052003/cms:complaint-backend-v3
+    image: riyaz05042004/cms:complaint-backend-v7
     container_name: complaint-backend
     ports:
       - "8080:8080"
@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: riyaz04052003/cms:complaint-frontend-v3
+    image: riyaz05042004/cms:complaint-frontend-v7
     container_name: complaint-frontend
     ports:
       - "80:80"

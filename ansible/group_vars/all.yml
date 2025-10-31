@@ -1,0 +1,28 @@
+# Application Configuration
+app_name: "devInten-cms"
+app_directory: "/opt/{{ app_name }}"
+
+# Docker Configuration
+dockerhub_user: "riyaz05042004"
+backend_image: "complaint-backend"
+frontend_image: "complaint-frontend"
+db_image: "complaint-database"
+image_tag: "v7"  # This will be updated by Jenkins
+
+# Database Configuration
+mysql_root_password: "rootpassword"
+mysql_database: "complaint_db"
+mysql_user: "complaint_user"
+mysql_password: "complaint_pass"
+
+# System Configuration
+docker_compose_version: "2.20.2"
+required_packages:
+  - docker
+  - git
+
+# Firewall Ports
+firewall_ports:
+  - "80/tcp"
+  - "8080/tcp"
+  - "22/tcp"

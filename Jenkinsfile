@@ -71,6 +71,21 @@ pipeline {
                 """
             }
         }
+
+        stage('Deploy to EC2 with Ansible') {
+            steps {
+                echo "🚀 Deploying to EC2 using Ansible..."
+                dir('ansible') {
+                    sh """
+                    # Update image tag in Ansible variables
+                    sed -i 's/image_tag: .*/image_tag: "${IMAGE_TAG}"/' group_vars/all.yml
+                    
+                    # Run Ansible deployment
+                    ansible-playbook -i inventory/hosts.yml playbooks/deploy.yml -v
+                    """
+                }
+            }
+        }
     }
 
     post {

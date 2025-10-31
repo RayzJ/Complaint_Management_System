@@ -1,0 +1,53 @@
+version: '3.8'
+services:
+  database:
+    image: {{ dockerhub_user }}/cms:{{ db_image }}-{{ image_tag }}
+    container_name: cms-database
+    environment:
+      MYSQL_ROOT_PASSWORD: {{ mysql_root_password }}
+      MYSQL_DATABASE: {{ mysql_database }}
+      MYSQL_USER: {{ mysql_user }}
+      MYSQL_PASSWORD: {{ mysql_password }}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - cms-network
+
+  backend:
+    image: {{ dockerhub_user }}/cms:{{ backend_image }}-{{ image_tag }}
+    container_name: cms-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/{{ mysql_database }}?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: {{ mysql_root_password }}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQL8Dialect
+    depends_on:
+      - database
+    restart: unless-stopped
+    networks:
+      - cms-network
+
+  frontend:
+    image: {{ dockerhub_user }}/cms:{{ frontend_image }}-{{ image_tag }}
+    container_name: cms-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - cms-network
+
+volumes:
+  mysql_data:
+
+networks:
+  cms-network:
+    driver: bridge

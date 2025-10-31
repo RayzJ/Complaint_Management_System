@@ -1,0 +1,124 @@
+---
+- name: Deploy DevInTen CMS to EC2
+  hosts: ec2_instances
+  become: yes
+  gather_facts: yes
+  
+  tasks:
+    - name: Update system packages
+      dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+      tags: [system]
+
+    - name: Install required packages
+      dnf:
+        name: "{{ required_packages }}"
+        state: present
+      tags: [system]
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      tags: [docker]
+
+    - name: Add ec2-user to docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
+      tags: [docker]
+
+    - name: Install Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/v{{ docker_compose_version }}/docker-compose-linux-x86_64"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+        owner: root
+        group: root
+      tags: [docker]
+
+    - name: Create symbolic link for docker-compose
+      file:
+        src: /usr/local/bin/docker-compose
+        dest: /usr/bin/docker-compose
+        state: link
+      tags: [docker]
+
+    - name: Create application directory
+      file:
+        path: "{{ app_directory }}"
+        state: directory
+        mode: '0755'
+        owner: ec2-user
+        group: ec2-user
+      tags: [app]
+
+    - name: Generate docker-compose.yml from template
+      template:
+        src: ../templates/docker-compose.yml.j2
+        dest: "{{ app_directory }}/docker-compose.yml"
+        owner: ec2-user
+        group: ec2-user
+        mode: '0644'
+      tags: [app]
+
+    - name: Pull latest Docker images
+      shell: |
+        cd {{ app_directory }}
+        docker-compose pull
+      become_user: ec2-user
+      tags: [deploy]
+
+    - name: Stop existing containers (if any)
+      shell: |
+        cd {{ app_directory }}
+        docker-compose down || true
+      become_user: ec2-user
+      ignore_errors: yes
+      tags: [deploy]
+
+    - name: Start application with Docker Compose
+      shell: |
+        cd {{ app_directory }}
+        docker-compose up -d
+      become_user: ec2-user
+      tags: [deploy]
+
+    - name: Wait for services to be ready
+      wait_for:
+        port: "{{ item }}"
+        host: localhost
+        delay: 10
+        timeout: 300
+      loop:
+        - 80
+        - 8080
+        - 3306
+      tags: [verify]
+
+    - name: Check container status
+      shell: |
+        cd {{ app_directory }}
+        docker-compose ps
+      become_user: ec2-user
+      register: container_status
+      tags: [verify]
+
+    - name: Display container status
+      debug:
+        var: container_status.stdout_lines
+      tags: [verify]
+
+    - name: Configure firewall (if firewalld is available)
+      firewalld:
+        port: "{{ item }}"
+        permanent: yes
+        state: enabled
+        immediate: yes
+      loop: "{{ firewall_ports }}"
+      ignore_errors: yes
+      tags: [firewall]
