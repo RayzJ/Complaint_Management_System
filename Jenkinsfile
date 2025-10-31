@@ -77,6 +77,9 @@ pipeline {
                 echo "🚀 Deploying to EC2 using Ansible..."
                 dir('ansible') {
                     sh """
+                    # Set SSH key permissions
+                    chmod 600 ./riyaz-pass.pem
+                    
                     # Update image tag in Ansible variables
                     sed -i 's/image_tag: .*/image_tag: "${IMAGE_TAG}"/' group_vars/all.yml
                     
