@@ -69,23 +69,20 @@
     - name: Pull latest Docker images
       shell: |
         cd {{ app_directory }}
-        docker-compose pull
-      become_user: ec2-user
+        sudo docker-compose pull
       tags: [deploy]
 
     - name: Stop existing containers (if any)
       shell: |
         cd {{ app_directory }}
-        docker-compose down || true
-      become_user: ec2-user
+        sudo docker-compose down || true
       ignore_errors: yes
       tags: [deploy]
 
     - name: Start application with Docker Compose
       shell: |
         cd {{ app_directory }}
-        docker-compose up -d
-      become_user: ec2-user
+        sudo docker-compose up -d
       tags: [deploy]
 
     - name: Wait for services to be ready
@@ -103,8 +100,7 @@
     - name: Check container status
       shell: |
         cd {{ app_directory }}
-        docker-compose ps
-      become_user: ec2-user
+        sudo docker-compose ps
       register: container_status
       tags: [verify]
 
