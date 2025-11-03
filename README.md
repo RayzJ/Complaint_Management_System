@@ -30,9 +30,9 @@ A full-stack complaint management system with role-based access control, built w
 
 | Role | Username | Password |
 |------|----------|----------|
-| Admin | `admin_1` | `password123` |
-| Support Agent | `support_1` | `password123` |
-| Customer | `customer_1` | `password123` |
+| Admin | `admin_1` | `admin1@123` |
+| Support Agent | `support_1` | `support1@123` |
+| Customer | `customer_1` | `customer1@123` |
 
 ## 📦 Manual Deployment
 
@@ -309,24 +309,6 @@ ssh -i ~/.ssh/your-key.pem ec2-user@your-ec2-ip
 ansible-inventory -i inventory/hosts.yml --list
 ```
 
-## 📈 Monitoring
-
-### Health Checks
-- Frontend: `http://your-domain/`
-- Backend: `http://your-domain:8080/actuator/health`
-- Database: Port 3306 connectivity
-
-### Logs
-```bash
-# View application logs
-docker-compose logs -f
-
-# View specific service logs
-docker-compose logs backend
-docker-compose logs frontend
-docker-compose logs database
-```
-
 ## 🔒 Security
 
 - JWT-based authentication
@@ -343,9 +325,6 @@ docker-compose logs database
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License.
 
 ## 👨‍💻 Author
 
@@ -366,9 +345,3 @@ ansible-playbook -i inventory/hosts.yml playbooks/deploy.yml -v
 
 # Jenkins Pipeline
 # Push code to GitHub → Automatic build and deployment
-
-# Health Check
-curl http://your-domain/api/actuator/health
-```
-
-**🚀 Your DevInTen Complaint Management System is ready to go!**
